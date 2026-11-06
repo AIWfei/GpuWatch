@@ -17,14 +17,19 @@ from PySide6.QtWidgets import (
 )
 
 from ..config import AppConfig, LOG_PATH
+from .busy_period_tab import BusyPeriodTab
 from .connection_tab import ConnectionTab
 from .general_tab import GeneralTab
 from .log_tab import LogTab
+from .query_history_tab import QueryHistoryTab
 from .rules_tab import RulesTab
 from .status_tab import StatusTab
 
-TAB_TITLES = ("状态", "连接", "规则", "通知与常规", "日志")
-EDITABLE_TABS = (1, 2, 3)
+TAB_TITLES = ("状态", "查询记录", "繁忙时段", "连接", "规则", "通知与常规", "日志")
+CONNECTION_TAB_INDEX = 3
+RULES_TAB_INDEX = 4
+GENERAL_TAB_INDEX = 5
+EDITABLE_TABS = (CONNECTION_TAB_INDEX, RULES_TAB_INDEX, GENERAL_TAB_INDEX)
 
 
 class MainWindow(QMainWindow):
@@ -65,15 +70,24 @@ class MainWindow(QMainWindow):
 
         self.tabs = QTabWidget()
         self.status_tab = StatusTab()
+        self.query_history_tab = QueryHistoryTab()
+        self.busy_period_tab = BusyPeriodTab()
         self.connection_tab = ConnectionTab()
         self.rules_tab = RulesTab()
         self.general_tab = GeneralTab()
         self.log_tab = LogTab(LOG_PATH)
-        self.tabs.addTab(self.status_tab, TAB_TITLES[0])
-        self.tabs.addTab(self.connection_tab, TAB_TITLES[1])
-        self.tabs.addTab(self.rules_tab, TAB_TITLES[2])
-        self.tabs.addTab(self.general_tab, TAB_TITLES[3])
-        self.tabs.addTab(self.log_tab, TAB_TITLES[4])
+        for index, widget in enumerate(
+            (
+                self.status_tab,
+                self.query_history_tab,
+                self.busy_period_tab,
+                self.connection_tab,
+                self.rules_tab,
+                self.general_tab,
+                self.log_tab,
+            )
+        ):
+            self.tabs.addTab(widget, TAB_TITLES[index])
         layout.addWidget(self.tabs, 1)
 
         bottom = QHBoxLayout()
@@ -159,7 +173,7 @@ class MainWindow(QMainWindow):
         )
 
     def show_connection_tab(self) -> None:
-        self.tabs.setCurrentIndex(1)
+        self.tabs.setCurrentIndex(CONNECTION_TAB_INDEX)
         self.show_and_raise()
 
     def show_and_raise(self) -> None:

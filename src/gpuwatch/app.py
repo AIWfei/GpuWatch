@@ -29,7 +29,12 @@ from .ssh_session import UnknownHostKeyError, clear_host_key, trust_host_key
 from .system import set_autostart
 from .ui.host_key_dialog import HostKeyDialog
 from .ui.icons import app_icon, tray_icon
-from .ui.main_window import MainWindow
+from .ui.main_window import (
+    CONNECTION_TAB_INDEX,
+    GENERAL_TAB_INDEX,
+    RULES_TAB_INDEX,
+    MainWindow,
+)
 from .worker import MonitorWorker, TestConnectionTask
 
 log = logging.getLogger(__name__)
@@ -224,6 +229,10 @@ class AppController(QObject):
         self.last_samples = samples
         self.window.status_tab.on_snapshot(samples)
         self.window.rules_tab.set_available_gpus(samples)
+        self.window.query_history_tab.add_snapshot(
+            samples, self.cfg.monitor, "监控"
+        )
+        self.window.busy_period_tab.add_snapshot(samples, self.cfg.monitor)
         self._update_tray_tooltip()
 
     def _on_alert(self, event: AlertEvent) -> None:
@@ -353,6 +362,8 @@ class AppController(QObject):
         self._monitor_state = state
         self._paused = state == "paused"
         self.window.status_tab.set_monitoring_state(state)
+        if state == "stopped":
+            self.window.busy_period_tab.close_open()
         if state == "running":
             self._pause_action.setText("暂停监控")
             self._pause_action.setEnabled(True)
@@ -382,14 +393,20 @@ class AppController(QObject):
 
         messages: list[str] = []
         first_tab: int | None = None
-        for index, tab in ((1, connection), (2, rules), (3, general_tab)):
+        for index, tab in (
+            (CONNECTION_TAB_INDEX, connection),
+            (RULES_TAB_INDEX, rules),
+            (GENERAL_TAB_INDEX, general_tab),
+        ):
             errors = tab.validate()
             if errors:
                 if first_tab is None:
                     first_tab = index
                 messages.extend(message for _widget, message in errors)
         if messages:
-            self.window.show_validation_errors(first_tab or 1, messages)
+            self.window.show_validation_errors(
+                first_tab or CONNECTION_TAB_INDEX, messages
+            )
             return
 
         server = connection.collect(self.cfg.server)
@@ -512,6 +529,9 @@ class AppController(QObject):
             return
         self.window.connection_tab.show_test_success(samples)
         self.window.rules_tab.set_available_gpus(samples)
+        self.window.query_history_tab.add_snapshot(
+            samples, self.cfg.monitor, "测试连接"
+        )
         self.window.show_status_message(
             f"测试连接成功，检测到 {len(samples)} 张 GPU", 5000
         )

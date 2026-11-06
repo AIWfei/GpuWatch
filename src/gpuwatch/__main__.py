@@ -10,6 +10,7 @@ from .config import ConfigStore, ensure_app_dir
 from .logging_setup import setup_logging
 from .system import acquire_single_instance, set_app_user_model_id
 from .ui.icons import app_icon
+from .ui.main_window import CONNECTION_TAB_INDEX
 
 log = logging.getLogger(__name__)
 
@@ -62,7 +63,7 @@ def main() -> int:
     first_run = not cfg.server.host.strip()
     if first_run:
         controller.mark_unconfigured()
-        controller.window.tabs.setCurrentIndex(1)
+        controller.window.tabs.setCurrentIndex(CONNECTION_TAB_INDEX)
         controller.window.show()
     elif "--minimized" not in sys.argv:
         controller.window.show()
